@@ -1,31 +1,35 @@
-// news-in-one-image-20261117 — entry program.
+// Entry program for news-image-20261117 (v2).
 //
-// The entry itself is the infographic in entry.png, which sits next to
-// this file. The harness expects the image at a well-known output
-// location, so this program simply delivers the bundled PNG there:
+// What ships in this repository is a finished infographic, entry.png,
+// drawn as an HTML/SVG page (index.html) and rendered once to PNG.
+// The competition harness runs this program in a sandbox with no
+// network and expects the picture at a fixed output path, so the
+// program's whole job is to place a copy of the bundled PNG there:
 //
-//   - if MAKEFUN_OUTPUT_DIR is set, the image goes to
-//     $MAKEFUN_OUTPUT_DIR/entry.png (used for local test runs)
-//   - otherwise it goes to /output/entry.png (the grader's container)
+//   destination = $MAKEFUN_OUTPUT_DIR/entry.png   when the variable
+//                                                  is set (local runs)
+//               = /output/entry.png                otherwise (grader)
 //
-// Node 22 standard library only; no network access, no dependencies.
-// Run it with:  mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// Only Node 22's standard library is used. To try it locally:
+//
+//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { copyFileSync, mkdirSync, statSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { copyFileSync, mkdirSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-// Resolve the folder this file lives in, so the PNG is found relative
-// to main.ts rather than relative to the caller's working directory.
-const here = dirname(fileURLToPath(import.meta.url));
-const sourcePng = join(here, 'entry.png');
+// Anchor every path to this file's own folder. Resolving against the
+// caller's working directory would break whenever the harness invokes
+// the program from somewhere else.
+const folder = dirname(fileURLToPath(import.meta.url));
+const bundled = join(folder, "entry.png");
 
-const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
-const targetPng = join(outputDir, 'entry.png');
+const outDir = process.env.MAKEFUN_OUTPUT_DIR || "/output";
+const outFile = join(outDir, "entry.png");
 
-// The output folder may not exist yet on a fresh run.
-mkdirSync(outputDir, { recursive: true });
-copyFileSync(sourcePng, targetPng);
+// A fresh sandbox may not have the output folder yet, so create it
+// (recursively, and without complaining if it already exists).
+mkdirSync(outDir, { recursive: true });
+copyFileSync(bundled, outFile);
 
-const { size } = statSync(targetPng);
-console.log(`entry.png delivered: ${targetPng} (${size} bytes)`);
+console.log("wrote " + outFile + " (" + statSync(outFile).size + " bytes)");
